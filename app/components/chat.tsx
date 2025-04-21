@@ -1,9 +1,9 @@
 "use client"
 
 import type React from "react"
-
-import { useChat } from "ai/react"
 import { useState, useRef, useEffect } from "react"
+import { useChat } from "ai/react"
+
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { ScrollArea } from "./ui/scroll-area"
@@ -23,13 +23,12 @@ export function Chat() {
   const [selectedLanguage, setSelectedLanguage] = useState("en-US")
   const [audioEnabled, setAudioEnabled] = useState(true)
   const { playVoice, isPlaying, stopPlayback } = useVoicePlayback()
-  
-  // Local state for input handling
+
   const [inputValue, setInputValue] = useState("")
-  const [chatMessages, setChatMessages] = useState<Array<{id: string, role: "user" | "assistant" | "system", content: string}>>([])
+  const [chatMessages, setChatMessages] = useState<Array<{ id: string, role: "user" | "assistant" | "system", content: string }>>([])
   const [loading, setLoading] = useState(false)
 
-  // Initialize with system message
+  // Initial welcome message
   useEffect(() => {
     if (chatMessages.length === 0) {
       setChatMessages([
@@ -43,40 +42,30 @@ export function Chat() {
     }
   }, [])
 
-  // Auto-scroll to bottom when messages change
+  // Auto-scroll to the bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [chatMessages])
 
-  // Handle input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value)
   }
 
-  // Submit handler
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    
     if (!inputValue.trim() || loading) return
-    
-    // Create user message
+
     const userMessage = {
       id: Date.now().toString(),
       role: "user" as const,
       content: inputValue,
     }
-    
-    // Add to messages
+
     setChatMessages(prev => [...prev, userMessage])
-    
-    // Clear input
     setInputValue("")
-    
-    // Set loading state
     setLoading(true)
-    
+
     try {
-      // Call API
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
@@ -86,21 +75,16 @@ export function Chat() {
           messages: [...chatMessages, userMessage],
         }),
       })
-      
+
       const data = await response.json()
-      console.log("API response:", data)
-      
-      // Add AI response to messages
       if (data && data.role === "assistant") {
         setChatMessages(prev => [...prev, data])
-        
-        // Play voice if enabled
         if (audioEnabled) {
           await playVoice(data.content, selectedLanguage)
         }
       }
     } catch (error) {
-      console.error("Error calling API:", error)
+      console.error("API error:", error)
     } finally {
       setLoading(false)
     }
@@ -112,15 +96,12 @@ export function Chat() {
       const fakeEvent = {
         preventDefault: () => {},
       } as React.FormEvent<HTMLFormElement>
-      
       handleSubmit(fakeEvent)
     }
   }
 
   const toggleAudio = () => {
-    if (isPlaying) {
-      stopPlayback()
-    }
+    if (isPlaying) stopPlayback()
     setAudioEnabled(!audioEnabled)
   }
 
@@ -131,14 +112,11 @@ export function Chat() {
     { value: "gu-IN", label: "Gujarati" },
   ]
 
-  // Function to test API directly
   async function testApiDirectly() {
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: [
             {
@@ -147,29 +125,24 @@ export function Chat() {
             },
           ],
         }),
-      });
-      
-      const data = await response.json();
-      console.log("Direct API response:", data);
-      
-      // Add test message and response to chat
+      })
+
+      const data = await response.json()
       setChatMessages(prev => [
         ...prev,
         { id: "test-message", role: "user", content: "Hello, this is a test message" },
-        { ...data, id: data.id || Date.now().toString() }
-      ]);
-      
-      return data;
+        { ...data, id: data.id || Date.now().toString() },
+      ])
     } catch (error) {
-      console.error("Direct API call failed:", error);
-      return null;
+      console.error("Test API error:", error)
     }
   }
 
   return (
-    <div className="flex flex-col h-[80vh]">
-      <Tabs value={activeTab} onValueChange={(value: string) => setActiveTab(value as "chat" | "system")} className="w-full">
-        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700">
+    <div className="flex flex-col h-screen w-full bg-background text-foreground">
+      <Tabs value={activeTab} onValueChange={value => setActiveTab(value as "chat" | "system")} className="flex flex-col flex-1 min-h-0">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700 bg-gray-900">
           <TabsList className="bg-gray-700/50">
             <TabsTrigger value="chat" className="data-[state=active]:bg-gray-600">
               <Bot className="w-4 h-4 mr-2" />
@@ -180,12 +153,8 @@ export function Chat() {
               System Info
             </TabsTrigger>
           </TabsList>
-          <div className="flex items-center space-x-2">
-            <Button 
-              onClick={() => testApiDirectly()} 
-              className="bg-amber-600 hover:bg-amber-700 text-xs"
-              size="sm"
-            >
+          <div className="flex items-center gap-2">
+            <Button onClick={testApiDirectly} className="bg-amber-600 hover:bg-amber-700 text-xs" size="sm">
               Test API
             </Button>
             <span className="text-xs text-gray-400">Powered by</span>
@@ -194,26 +163,30 @@ export function Chat() {
           </div>
         </div>
 
-        <TabsContent value="chat" className="flex-1 flex flex-col mt-0 data-[state=inactive]:hidden">
-          <div className="flex items-center justify-between px-4 py-2 bg-gray-800/70 border-b border-gray-700">
-            <div className="flex items-center space-x-2">
+        {/* Chat Tab */}
+        <TabsContent value="chat" className="flex flex-col flex-1 min-h-0 data-[state=inactive]:hidden">
+          {/* Top controls */}
+          <div className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700">
+            <div className="flex items-center gap-2">
               <Button
                 className={cn(
                   "outline h-8 w-8 rounded-full",
-                  audioEnabled ? "bg-amber-600/20 text-amber-400 hover:bg-amber-600/30" : "bg-gray-700",
+                  audioEnabled ? "bg-amber-600/20 text-amber-400 hover:bg-amber-600/30" : "bg-gray-700"
                 )}
                 onClick={toggleAudio}
               >
                 {audioEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
               </Button>
-              <span className="text-sm text-gray-300">{audioEnabled ? "Voice Output: On" : "Voice Output: Off"}</span>
+              <span className="text-sm text-gray-300">
+                {audioEnabled ? "Voice Output: On" : "Voice Output: Off"}
+              </span>
             </div>
             <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
               <SelectTrigger className="w-[140px] h-8 bg-gray-700/50 border-gray-600">
                 <SelectValue placeholder="Language" />
               </SelectTrigger>
               <SelectContent className="bg-gray-800 border-gray-700">
-                {languages.map((lang) => (
+                {languages.map(lang => (
                   <SelectItem key={lang.value} value={lang.value}>
                     {lang.label}
                   </SelectItem>
@@ -222,35 +195,31 @@ export function Chat() {
             </Select>
           </div>
 
-          <ScrollArea className="flex-1 p-4">
-            <div className="space-y-4 mb-4">
-              {chatMessages.map((message) => {
-                // Determine if this is a function-calling or conversational message
-                const isFunctionMessage =
-                  message.content.includes("Function called:") || message.content.includes("Executing function:")
+          {/* Chat messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {chatMessages.map((message) => {
+              const isFunctionMessage = message.content.includes("Function called:") || message.content.includes("Executing function:")
+              if (message.role === "system") {
+                return <SystemMessage key={message.id} message={message.content} />
+              }
+              return (
+                <ChatMessage
+                  key={message.id}
+                  message={message}
+                  icon={isFunctionMessage ? <Function className="h-5 w-5" /> : undefined}
+                  className={cn(
+                    isFunctionMessage && message.role === "assistant" && "bg-amber-950/20 border-amber-800/30"
+                  )}
+                  onPlayVoice={audioEnabled ? () => playVoice(message.content, selectedLanguage) : undefined}
+                />
+              )
+            })}
+            <div ref={messagesEndRef} />
+          </div>
 
-                if (message.role === "system") {
-                  return <SystemMessage key={message.id} message={message.content} />
-                }
-
-                return (
-                  <ChatMessage
-                    key={message.id}
-                    message={message}
-                    icon={isFunctionMessage ? <Function className="h-5 w-5" /> : undefined}
-                    className={cn(
-                      isFunctionMessage && message.role === "assistant" && "bg-amber-950/20 border-amber-800/30",
-                    )}
-                    onPlayVoice={audioEnabled ? () => playVoice(message.content, selectedLanguage) : undefined}
-                  />
-                )
-              })}
-              <div ref={messagesEndRef} />
-            </div>
-          </ScrollArea>
-
-          <div className="p-4 border-t border-gray-700">
-            <form onSubmit={handleSubmit} className="flex space-x-2">
+          {/* Input area */}
+          <div className="p-4 border-t border-gray-700 bg-gray-900">
+            <form onSubmit={handleSubmit} className="flex gap-2">
               <Input
                 value={inputValue}
                 onChange={handleInputChange}
@@ -273,8 +242,9 @@ export function Chat() {
           </div>
         </TabsContent>
 
-        <TabsContent value="system" className="flex-1 p-4 data-[state=inactive]:hidden">
-          <div className="space-y-6">
+        {/* System Info Tab */}
+        <TabsContent value="system" className="flex-1 overflow-y-auto p-4 space-y-6 data-[state=inactive]:hidden">
+        <div className="space-y-6">
             <div className="bg-gray-700/30 p-4 rounded-lg border border-gray-700">
               <h3 className="text-lg font-medium mb-2 flex items-center">
                 <Bot className="w-5 h-5 mr-2 text-amber-400" />
