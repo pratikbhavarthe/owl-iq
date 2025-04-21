@@ -103,8 +103,8 @@ export function Chat() {
           </TabsList>
           <div className="flex items-center space-x-2">
             <span className="text-xs text-gray-400">Powered by</span>
-            <Sparkles className="h-4 w-4 text-amber-400" />
-            <span className="text-sm font-medium">OpenAI + Vercel AI SDK</span>
+            <Sparkles className="h-4 w-4 text-orange-400" />
+            <span className="text-sm font-medium">Orangewood Labs</span>
           </div>
         </div>
 
