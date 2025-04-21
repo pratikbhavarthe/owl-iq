@@ -34,8 +34,12 @@ export async function POST(request: Request) {
     const response = completion.choices[0].message;
     console.log("OpenAI response:", response);
     
-    // Return in the format expected by the Vercel AI SDK
-    return NextResponse.json(response);
+    // Return the response in the format expected by the Vercel AI SDK
+    return NextResponse.json({
+      id: Date.now().toString(),
+      role: "assistant",
+      content: response.content || "",
+    });
   } catch (error) {
     console.error("Error generating AI response:", error);
     return NextResponse.json(

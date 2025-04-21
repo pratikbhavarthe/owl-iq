@@ -23,35 +23,16 @@ export function Chat() {
   const [selectedLanguage, setSelectedLanguage] = useState("en-US")
   const [audioEnabled, setAudioEnabled] = useState(true)
   const { playVoice, isPlaying, stopPlayback } = useVoicePlayback()
+  
+  // Local state for input handling
+  const [inputValue, setInputValue] = useState("")
+  const [chatMessages, setChatMessages] = useState<Array<{id: string, role: "user" | "assistant" | "system", content: string}>>([])
+  const [loading, setLoading] = useState(false)
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages, setInput } = useChat({
-    api: "/api/chat",
-    onResponse: (response) => {
-      // This would handle any metadata from the response
-      const responseHeaders = response.headers
-      const modelUsed = responseHeaders.get("x-model-used")
-
-      if (modelUsed) {
-        console.log(`Model used for this response: ${modelUsed}`)
-      }
-    },
-    onFinish: async (message) => {
-      if (audioEnabled) {
-        // Play the response as speech
-        await playVoice(message.content, selectedLanguage)
-      }
-    },
-  })
-
-  // Auto-scroll to bottom when messages change
+  // Initialize with system message
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
-
-  // Add a system message to explain the demo
-  useEffect(() => {
-    if (messages.length === 0) {
-      setMessages([
+    if (chatMessages.length === 0) {
+      setChatMessages([
         {
           id: "system-welcome",
           role: "system",
@@ -60,15 +41,78 @@ export function Chat() {
         },
       ])
     }
-  }, [messages.length, setMessages])
+  }, [])
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [chatMessages])
+
+  // Handle input change
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value)
+  }
+
+  // Submit handler
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    
+    if (!inputValue.trim() || loading) return
+    
+    // Create user message
+    const userMessage = {
+      id: Date.now().toString(),
+      role: "user" as const,
+      content: inputValue,
+    }
+    
+    // Add to messages
+    setChatMessages(prev => [...prev, userMessage])
+    
+    // Clear input
+    setInputValue("")
+    
+    // Set loading state
+    setLoading(true)
+    
+    try {
+      // Call API
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: [...chatMessages, userMessage],
+        }),
+      })
+      
+      const data = await response.json()
+      console.log("API response:", data)
+      
+      // Add AI response to messages
+      if (data && data.role === "assistant") {
+        setChatMessages(prev => [...prev, data])
+        
+        // Play voice if enabled
+        if (audioEnabled) {
+          await playVoice(data.content, selectedLanguage)
+        }
+      }
+    } catch (error) {
+      console.error("Error calling API:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleVoiceInput = (transcript: string) => {
-    setInput(transcript)
+    setInputValue(transcript)
     if (transcript.trim()) {
       const fakeEvent = {
         preventDefault: () => {},
       } as React.FormEvent<HTMLFormElement>
-
+      
       handleSubmit(fakeEvent)
     }
   }
@@ -87,6 +131,41 @@ export function Chat() {
     { value: "gu-IN", label: "Gujarati" },
   ]
 
+  // Function to test API directly
+  async function testApiDirectly() {
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: "user",
+              content: "Hello, this is a test message",
+            },
+          ],
+        }),
+      });
+      
+      const data = await response.json();
+      console.log("Direct API response:", data);
+      
+      // Add test message and response to chat
+      setChatMessages(prev => [
+        ...prev,
+        { id: "test-message", role: "user", content: "Hello, this is a test message" },
+        { ...data, id: data.id || Date.now().toString() }
+      ]);
+      
+      return data;
+    } catch (error) {
+      console.error("Direct API call failed:", error);
+      return null;
+    }
+  }
+
   return (
     <div className="flex flex-col h-[80vh]">
       <Tabs value={activeTab} onValueChange={(value: string) => setActiveTab(value as "chat" | "system")} className="w-full">
@@ -102,6 +181,13 @@ export function Chat() {
             </TabsTrigger>
           </TabsList>
           <div className="flex items-center space-x-2">
+            <Button 
+              onClick={() => testApiDirectly()} 
+              className="bg-amber-600 hover:bg-amber-700 text-xs"
+              size="sm"
+            >
+              Test API
+            </Button>
             <span className="text-xs text-gray-400">Powered by</span>
             <Sparkles className="h-4 w-4 text-orange-400" />
             <span className="text-sm font-medium">Orangewood Labs</span>
@@ -138,7 +224,7 @@ export function Chat() {
 
           <ScrollArea className="flex-1 p-4">
             <div className="space-y-4 mb-4">
-              {messages.map((message) => {
+              {chatMessages.map((message) => {
                 // Determine if this is a function-calling or conversational message
                 const isFunctionMessage =
                   message.content.includes("Function called:") || message.content.includes("Executing function:")
@@ -166,20 +252,20 @@ export function Chat() {
           <div className="p-4 border-t border-gray-700">
             <form onSubmit={handleSubmit} className="flex space-x-2">
               <Input
-                value={input}
+                value={inputValue}
                 onChange={handleInputChange}
                 placeholder="Ask a question or request a task..."
                 className="flex-1 bg-gray-700/50 border-gray-600 focus-visible:ring-amber-500"
-                disabled={isLoading || isListening}
+                disabled={loading || isListening}
               />
               <VoiceRecorder
                 isListening={isListening}
                 setIsListening={setIsListening}
                 onTranscript={handleVoiceInput}
                 language={selectedLanguage}
-                disabled={isLoading}
+                disabled={loading}
               />
-              <Button type="submit" disabled={isLoading || !input.trim() || isListening}>
+              <Button type="submit" disabled={loading || !inputValue.trim() || isListening}>
                 <Send className="h-4 w-4 mr-2" />
                 Send
               </Button>

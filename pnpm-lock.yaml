@@ -44,6 +44,9 @@ importers:
       openai:
         specifier: ^4.95.1
         version: 4.95.1(zod@3.24.3)
+      openai-edge:
+        specifier: ^1.2.2
+        version: 1.2.2
       react:
         specifier: ^19.0.0
         version: 19.1.0
@@ -1899,6 +1902,10 @@ packages:
   object.values@1.2.1:
     resolution: {integrity: sha512-gXah6aZrcUxjWg2zR2MwouP2eHlCBzdV4pygudehaKXSGW4v2AsRQUK+lwwXhii6KFZcunEnmSUoYp5CXibxtA==}
     engines: {node: '>= 0.4'}
+
+  openai-edge@1.2.2:
+    resolution: {integrity: sha512-C3/Ao9Hkx5uBPv9YFBpX/x59XMPgPUU4dyGg/0J2sOJ7O9D98kD+lfdOc7v/60oYo5xzMGct80uFkYLH+X2qgw==}
+    engines: {node: '>=18'}
 
   openai@4.95.1:
     resolution: {integrity: sha512-IqJy+ymeW+k/Wq+2YVN3693OQMMcODRtHEYOlz263MdUwnN/Dwdl9c2EXSxLLtGEHkSHAfvzpDMHI5MaWJKXjQ==}
@@ -4222,6 +4229,8 @@ snapshots:
       call-bound: 1.0.4
       define-properties: 1.2.1
       es-object-atoms: 1.1.1
+
+  openai-edge@1.2.2: {}
 
   openai@4.95.1(zod@3.24.3):
     dependencies:

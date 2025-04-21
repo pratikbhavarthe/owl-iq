@@ -20,11 +20,11 @@ export function ChatMessage({ message, className, icon, onPlayVoice }: ChatMessa
     <Card
       className={cn(
         "flex items-start p-4 gap-3",
-        message.role === "user" ? "bg-gray-700/30" : "bg-gray-800/50",
+        message.role === "user" ? "bg-gray-400/30" : "bg-gray-800/50",
         className,
       )}
     >
-      <Avatar className={cn("h-8 w-8 rounded-md", message.role === "user" ? "bg-gray-600" : "bg-amber-900/50")}>
+      <Avatar className={cn("h-8 w-8 rounded-md", message.role === "user" ? "bg-orange-600" : "bg-pink-900/50")}>
         {icon || (message.role === "user" ? <User className="h-5 w-5" /> : <Bot className="h-5 w-5" />)}
       </Avatar>
       <div className="flex-1 overflow-hidden">
@@ -32,7 +32,7 @@ export function ChatMessage({ message, className, icon, onPlayVoice }: ChatMessa
           <div className="text-sm font-medium">{message.role === "user" ? "You" : "OwlIQ"}</div>
           {message.role === "assistant" && onPlayVoice && (
             <Button
-              className="ghost h-6 w-6 rounded-full hover:bg-amber-600/20 hover:text-amber-400"
+              className="ghost h-6 w-6 rounded-full hover:bg-amber-600/20 hover:text-orange-400"
               onClick={onPlayVoice}
             >
               <Volume2 className="h-3 w-3" />
