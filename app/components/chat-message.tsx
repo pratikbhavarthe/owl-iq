@@ -1,46 +1,54 @@
-"use client"
-
-import type { Message } from "ai"
+import { Avatar, AvatarFallback } from "../components/ui/avatar"
 import { cn } from "@/lib/utils"
-import { Bot, User, Volume2 } from "lucide-react"
-import type { ReactNode } from "react"
-import { Card } from "./ui/card"
-import { Avatar } from "./ui/avatar"
-import { Button } from "./ui/button"
+import type { Message } from "../components/chat-interface"
+import { BotIcon as Robot, User, Wrench } from "lucide-react"
+import { TaskValidation } from "../components/task-validation"
 
 interface ChatMessageProps {
   message: Message
-  className?: string
-  icon?: ReactNode
-  onPlayVoice?: () => void
+  isTaskMessage?: boolean
 }
 
-export function ChatMessage({ message, className, icon, onPlayVoice }: ChatMessageProps) {
+export function ChatMessage({ message, isTaskMessage = false }: ChatMessageProps) {
+  const isUser = message.role === "user"
+
+  // Check if the message contains task validation data
+  const hasTaskValidation =
+    isTaskMessage &&
+    (message.content.includes("parameter") ||
+      message.content.includes("validation") ||
+      message.content.includes("missing"))
+
   return (
-    <Card
-      className={cn(
-        "flex items-start p-4 gap-3",
-        message.role === "user" ? "bg-gray-400/30" : "bg-gray-800/50",
-        className,
+    <div className={cn("flex gap-3 mb-4 text-sm", isUser ? "justify-end" : "justify-start")}>
+      {!isUser && (
+        <Avatar className="h-8 w-8">
+          <AvatarFallback className={cn("text-primary-foreground", isTaskMessage ? "bg-green-600" : "bg-primary")}>
+            {isTaskMessage ? <Wrench className="h-4 w-4" /> : <Robot className="h-4 w-4" />}
+          </AvatarFallback>
+        </Avatar>
       )}
-    >
-      <Avatar className={cn("h-8 w-8 rounded-md", message.role === "user" ? "bg-orange-600" : "bg-pink-900/50")}>
-        {icon || (message.role === "user" ? <User className="h-5 w-5" /> : <Bot className="h-5 w-5" />)}
-      </Avatar>
-      <div className="flex-1 overflow-hidden">
-        <div className="flex items-center justify-between mb-1">
-          <div className="text-sm font-medium">{message.role === "user" ? "You" : "OwlIQ"}</div>
-          {message.role === "assistant" && onPlayVoice && (
-            <Button
-              className="ghost h-6 w-6 rounded-full hover:bg-amber-600/20 hover:text-orange-400"
-              onClick={onPlayVoice}
-            >
-              <Volume2 className="h-3 w-3" />
-            </Button>
-          )}
-        </div>
-        <div className="text-sm whitespace-pre-wrap break-words">{message.content}</div>
+
+      <div
+        className={cn(
+          "rounded-lg px-4 py-2 max-w-[80%]",
+          isUser
+            ? "bg-primary text-primary-foreground"
+            : isTaskMessage
+              ? "bg-green-50 text-green-900 dark:bg-green-900/20 dark:text-green-100"
+              : "bg-muted",
+        )}
+      >
+        {hasTaskValidation ? <TaskValidation message={message.content} /> : message.content}
       </div>
-    </Card>
+
+      {isUser && (
+        <Avatar className="h-8 w-8">
+          <AvatarFallback className="bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+            <User className="h-4 w-4" />
+          </AvatarFallback>
+        </Avatar>
+      )}
+    </div>
   )
 }
